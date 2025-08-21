@@ -1,0 +1,74 @@
+services:
+  postgres:
+    build:
+      context: ./docker
+      dockerfile: pg.Dockerfile
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: $PGPASSWORD
+      POSTGRES_USER: $PGUSER
+      POSTGRES_HOST: $PGHOST
+      POSTGRES_DB: $PGDATABASE
+      POSTGRES_PASSWORD_REP: $PGPASSWORDREP
+      POSTGRES_USER_REP: $PGUSEREP
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-U", "postgres"]
+      interval: 5s
+      timeout: 1s
+      retries: 2
+
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"            # LocalStack Gateway
+      - "4510-4559:4510-4559"  # external services port range
+    environment:
+      LOCALSTACK_SERVICES: kinesis,firehose,s3,dynamodb,sts
+      AWS_ACCESS_KEY_ID: $FAKE_AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $FAKE_AWS_SECRET_ACCESS_KEY
+      REPLICATION_KINESIS_STREAM_NAME_WAL2JSON: $REPLICATION_KINESIS_STREAM_NAME_WAL2JSON
+      REPLICATION_FIREHOSE_NAME_WAL2JSON: $REPLICATION_FIREHOSE_NAME_WAL2JSON
+      REPLICATION_S3_BUCKET_WAL2JSON: $REPLICATION_S3_BUCKET_WAL2JSON
+      CURRENT_ENV: $CURRENT_ENV
+      DOCKER_HOST: unix:///var/run/docker.sock
+      DEBUG: 1 # curl -s localhost:4566/_localstack/diagnose / http://localhost:4566/diapretty
+    volumes:
+      - "./docker/init/localstack:/etc/localstack/init/ready.d/"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  flyway:
+    image: flyway/flyway:latest
+    command: -url=jdbc:postgresql://postgres:5432/postgres -schemas=public -user=postgres -password=postgres migrate -connectRetries=60
+    volumes:
+      - ./sql_migrations:/flyway/sql
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  stream_wal2json:
+    build:
+      context: stream
+    depends_on:
+      - postgres
+      - localstack
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: $PGPASSWORD
+      POSTGRES_USER: $PGUSER
+      POSTGRES_HOST: $PGHOST
+      POSTGRES_DB: $PGDATABASE
+      POSTGRES_PASSWORD_REP: $PGPASSWORDREP
+      POSTGRES_USER_REP: $PGUSEREP
+      PGSSLMODE: disable
+      CURRENT_ENV: $CURRENT_ENV
+      LOCALSTACK_URL: $LOCALSTACK_URL
+      AWS_ACCESS_KEY_ID: $FAKE_AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $FAKE_AWS_SECRET_ACCESS_KEY
+      AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+      REPLICATION_KINESIS_STREAM_NAME: $REPLICATION_KINESIS_STREAM_NAME_WAL2JSON
+      REPLICATION_FIREHOSE_NAME: $REPLICATION_FIREHOSE_NAME_WAL2JSON
+      REPLICATION_S3_BUCKET: $REPLICATION_S3_BUCKET_WAL2JSON
+      REPLICATION_SLOT_NAME: $REPLICATION_SLOT_NAME_WAL2JSON
+      REPLICATION_SLOT_TYPE: $REPLICATION_SLOT_TYPE_WAL2JSON
