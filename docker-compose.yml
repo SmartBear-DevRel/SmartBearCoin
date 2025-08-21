@@ -25,7 +25,7 @@ services:
       - "4566:4566"            # LocalStack Gateway
       - "4510-4559:4510-4559"  # external services port range
     environment:
-      LOCALSTACK_SERVICES: kinesis,firehose,s3,dynamodb,sts
+      LOCALSTACK_SERVICES: kinesis,firehose,s3,dynamodb,sts,serverless,sqs,sns,ssm,cloudformation,iam,logs
       AWS_ACCESS_KEY_ID: $FAKE_AWS_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: $FAKE_AWS_SECRET_ACCESS_KEY
       REPLICATION_KINESIS_STREAM_NAME_WAL2JSON: $REPLICATION_KINESIS_STREAM_NAME_WAL2JSON
