@@ -18,6 +18,10 @@ services:
       interval: 5s
       timeout: 1s
       retries: 2
+    dns:
+      - 10.5.0.5
+    networks:
+      - localstack
 
   localstack:
     image: localstack/localstack:latest
@@ -37,6 +41,10 @@ services:
     volumes:
       - "./docker/init/localstack:/etc/localstack/init/ready.d/"
       - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      localstack:
+        ipv4_address: 10.5.0.5
+
 
   flyway:
     image: flyway/flyway:latest
@@ -44,8 +52,11 @@ services:
     volumes:
       - ./sql_migrations:/flyway/sql
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
+    dns:
+      - 10.5.0.5
+    networks:
+      - localstack
 
   stream_wal2json:
     build:
@@ -63,7 +74,7 @@ services:
       POSTGRES_USER_REP: $PGUSEREP
       PGSSLMODE: disable
       CURRENT_ENV: $CURRENT_ENV
-      LOCALSTACK_URL: $LOCALSTACK_URL
+      # LOCALSTACK_URL: $LOCALSTACK_URL
       AWS_ACCESS_KEY_ID: $FAKE_AWS_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: $FAKE_AWS_SECRET_ACCESS_KEY
       AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
@@ -72,3 +83,32 @@ services:
       REPLICATION_S3_BUCKET: $REPLICATION_S3_BUCKET_WAL2JSON
       REPLICATION_SLOT_NAME: $REPLICATION_SLOT_NAME_WAL2JSON
       REPLICATION_SLOT_TYPE: $REPLICATION_SLOT_TYPE_WAL2JSON
+    dns:
+      - 10.5.0.5
+    networks:
+      - localstack
+
+  cdkui:
+    build:
+      context: ./cdkui
+      dockerfile: Dockerfile
+    restart: on-failure
+    environment:
+      LOCALSTACK_HOST: $LOCALSTACK_HOST
+      AWS_ACCESS_KEY_ID: $FAKE_AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $FAKE_AWS_SECRET_ACCESS_KEY
+      AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+    depends_on:
+      - localstack
+    dns:
+      - 10.5.0.5
+    networks:
+      - localstack
+
+networks:
+  localstack:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
