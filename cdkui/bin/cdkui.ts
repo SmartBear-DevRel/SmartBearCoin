@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
 import { CdkuiStack } from '../lib/cdkui-stack';
+import { HelloLambdaStack } from '../lib/hello-lambda-stack'
+import { PostgresStack } from '../lib/postgres-stack'
 
 const app = new cdk.App();
 new CdkuiStack(app, 'CdkuiStack', {
@@ -18,3 +20,5 @@ new CdkuiStack(app, 'CdkuiStack', {
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
+new HelloLambdaStack(app, 'HelloLambdaStack');
+new PostgresStack(app, 'PostgresStack');
