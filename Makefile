@@ -15,7 +15,7 @@ docker_no_localstack:
 	docker-compose config --services | grep -v localstack | xargs docker-compose up -d 
 
 sql:
-	psql -h localhost -c "INSERT INTO DummyData(Name, Age, City) VALUES('Foo', 55, 'Austin') RETURNING *;"
+	psql -h localhost -c "INSERT INTO Products(Id, Type, Name, Version) VALUES('11', 'PERSONAL_LOAN', 'MyFlexiPay', 'v2') RETURNING *;"
 
 s3_stream:
 	awslocal s3 cp --recursive s3://replication-bucket-wal2json/firehose/ ./tmp/wal2json

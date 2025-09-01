@@ -25,4 +25,4 @@ RUN npm install
 
 COPY . .
 
-ENTRYPOINT ["bash", "-c", "cdklocal bootstrap && cdklocal deploy --require-approval=never && awslocal s3 cp website s3://$(awslocal s3 ls --bucket-name-prefix cdkui | awk -F' ' '{print $3}') --recursive"]
+ENTRYPOINT ["bash", "-c", "cdklocal bootstrap && cdklocal deploy --require-approval=never --all && awslocal s3 ls --bucket-name-prefix cdkui | awk -F' ' '{print $3}' && awslocal s3 cp website s3://$(awslocal s3 ls --bucket-name-prefix cdkui | awk -F' ' '{print $3}') --recursive"]
